@@ -1,0 +1,43 @@
+/* Slider styles from
+ * https://github.com/distillpub/post--momentum
+ */
+.track,
+.track-inset,
+.track-overlay {
+  stroke-linecap: round;
+}
+
+.track {
+  stroke: #e6e6e6;
+  stroke-width: 2px;
+}
+
+.track-inset {
+  stroke: #e6e6e6;
+  stroke-width: 5px;
+}
+
+.track-overlay {
+  pointer-events: stroke;
+  stroke-width: 50px;
+  stroke: rgba(0,0,0,0)
+}
+
+.alifig {
+  font-family: Helvetica;
+}
+
+.handle {
+  fill: #fff;
+  fill-opacity: 0.2;
+  stroke: #000;
+  stroke-opacity: 0.5;
+  stroke-width: 1.5px;
+}
+
+.ticktext{
+  font-size: 12px;
+  line-height: 18px;
+  font-family: Helvetica;
+  text-align: right;
+}

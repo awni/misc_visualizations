@@ -1,0 +1,137 @@
+<head>
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script src="utils.js"></script>
+  <script src="ctc.js"></script>
+  <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+  <div id="seq2seq">
+    <svg id="alignment" class="alifig" width="782" height="220" viewBox="0 0 782 220"
+      xmlns="http://www.w3.org/2000/svg">
+      <rect x="31.5" y="17.5" width="750" height="197" style="fill:#ffffff;stroke-width:1;stroke:#000000" />
+      <text x="350" y="12" font-size="14">Inputs Steps</text>
+      <text transform="rotate(-90, 10, 165)" x="10" y="165" font-size="14">Output Steps</text>
+      <g id="rects" transform="translate(32, 18)"></g>
+      <g id="labels" transform="translate(18, 24)"></g>
+    </svg>
+    <div style="padding-top:10px;padding-bottom:20px;">
+      <svg id="trainingcurve" class="alifig" width="782" height="148" viewBox="0 0 782 148"
+        xmlns="http://www.w3.org/2000/svg">
+        <text transform="rotate(-90, 10, 75)" x="10" y="75" font-size="14">Loss</text>
+        <text x="365" y="146" font-size="14">Iterations</text>
+        <rect x="31.5" y="1" width="750" height="130" style="fill:#ffffff;stroke-width:1;stroke:#000000" />
+        <g id="fig" transform="translate(33, 2)">
+          <path fill="none" stroke="steelblue" stroke-linejoin="round" stroke-linecap="round" stroke-width="1.5"></path>
+        </g>
+      </svg>
+    </div>
+    <div id="slider"></div>
+  </div>
+  <script>
+    function get_col(idx, cols) {
+      return idx % cols;
+    }
+
+    function get_row(idx, cols) {
+      return Math.floor(idx / cols); 
+    }
+
+    function make_range(high, n_points) {
+      var skip = Math.floor(high / n_points);
+      var range = []
+      for (var i = 0; i <= high; i+= skip)
+        range.push(i);
+      return range;
+    }
+
+    function make_line(model) {
+      var tc = model.div.select("#trainingcurve");
+      var height = parseInt(tc.attr("height")) - 22;
+      var width = parseInt(tc.attr("width")) - 34;
+      var x = d3.scaleLinear()
+                .rangeRound([0, width])
+                .domain([0, model.losses.length]);
+      var y = d3.scaleLinear()
+                .rangeRound([height, 0])
+                .domain(d3.extent(model.losses));
+
+      var line = d3.line()
+                   .x(function(d, i) { return x(i); })
+                   .y(function(d) { return y(d); });
+      return line;
+    }
+
+    function draw_all(idx, model) {
+      var iters = model.alis.length * model.iter_per_ali;
+      if (idx >= iters)
+        idx = iters - 1;
+      draw_alis(idx, model);
+      draw_training_curve(idx, model);
+    }
+
+    function draw_training_curve(idx, model) {
+      model.div.select("#trainingcurve")
+        .select("path")
+        .datum(model.losses.slice(0, idx))
+        .attr("d", model.line);
+    }
+
+    function draw_ali_labels(model) {
+      var size = 7;
+      model.div.select("#alignment").select("#labels")
+        .selectAll("text")
+        .data(model.labels)
+        .enter().append("text")
+        .text(function(d) { return d; })
+        .attr("font-size", "6px")
+        .attr("y", function(d, i) { return i * size; });
+    }
+
+    function draw_alis(idx, model) {
+      idx = Math.floor(idx / model.iter_per_ali);
+      var alis = model.alis[idx];
+      var rows = alis.length;
+      var cols = alis[0].length;
+      var alis_1d = [];
+      for(var i = 0; i < rows; i++) {
+          alis_1d = alis_1d.concat(alis[i]);
+      }
+      var ops = d3.scaleLinear()
+                  .domain(d3.extent(alis_1d));
+
+      var size = 7;
+      model.div.select("#alignment").select("#rects")
+        .selectAll("rect")
+        .attr("opacity", function(d) { return ops(d); })
+        .data(alis_1d)
+        .enter().append("rect")
+        .attr("x", function(d, i) { return size * get_col(i, cols); })
+        .attr("y", function(d, i) { return size * get_row(i, cols); })
+        .attr("fill", "#4682b4")
+        .attr("width", size)
+        .attr("height", size)
+        .attr("opacity", function(d) { return ops(d); });
+    }
+
+    function gen_ali_fig(model) {
+      var line = make_line(model);
+      model.line = line;
+      model.iter_per_ali = 50;
+      var iters = model.alis.length * model.iter_per_ali;
+      var ticks = make_range(iters, 10);
+      var slider = sliderGen([800, 40])
+                  .ticks(ticks)
+                  .change(function (i) { draw_all(getslider(), model); })
+                  .cRadius(5)
+                  .startxval(0.003)
+                  .margins(20, 33)
+      var getslider = slider(model.div.select("#slider")).xval;
+      draw_all(0, model);
+      draw_ali_labels(model);
+    }
+
+    window.ctc.div = d3.select("#seq2seq");
+    gen_ali_fig(window.ctc);
+
+  </script>
+</body>
